@@ -1,25 +1,89 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import Header from './components/Header';
+import Formulario from './components/Formulario';
+import Error from './components/Error';
+import Clima from './components/Clima';
+
 
 class App extends Component {
+
+  state = {
+    error: {},
+    consulta: {},
+    resultado: {}
+  }
+
+  componentDidUpdate(prevProps, prevState){
+    if( prevState.consulta !== this.state.consulta ){
+      this.consultarApi();
+    }
+    
+  }
+
+  componentDidMount(){
+    this.setState({
+      error:{error:false, message:''}
+    })
+  }
+
+  consultarApi = () =>{
+    let { ciudad, pais } = this.state.consulta;
+    if(!ciudad || !pais) return null;
+
+    let idToken = '4865a182d68ebd64453a0ab82e2219d0';
+    let urlBase = 'https://api.openweathermap.org/data/2.5/weather?';
+    let query = `q=${ciudad},${pais}&lon=139&appid=${idToken}`;
+    let urlTotal = urlBase+query;
+
+    fetch(urlTotal)
+      .then(res=>{
+        if(res.ok){
+          return res.json();
+        }else{
+          console.log(res);
+          this.setState({
+            error:{error:true, message:res.statusText}
+          })
+        }
+      }).then(res =>{
+        this.setState({
+          resultado: res
+        })
+      }).catch(error=>{
+        this.setState({
+          error:{error:true, message:error.message}
+        })
+      })
+    
+  }
+
+  datosconsulta = (resp) =>{
+    if(resp.pais ==='' || resp.ciudad===''){
+      this.setState({
+        error:{error:true, message:'Los Campos Son obligatorios'}
+      })
+    }else{
+      this.setState({
+        consulta: resp,
+        error: {error:false, message:''}
+      })
+    }
+  }
+
   render() {
+
+    let hay = this.state.error;
+    if(hay.error){
+      var msjDiv = <Error mensaje={this.state.error.message}/>
+    }else{
+      msjDiv = <Clima resultado = {this.state.resultado}/>
+    }
+    
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
+      <div className="app">
+        <Header titulo="Clima React" />
+        <Formulario datosconsulta={this.datosconsulta}/>
+        {msjDiv}
       </div>
     );
   }
